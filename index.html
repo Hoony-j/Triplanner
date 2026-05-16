@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="여행 일정을 타임라인으로 관리하는 PWA" />
+  <meta name="theme-color" content="#fff8f0" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#fff8f0" media="(prefers-color-scheme: light)" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="여행앱" />
+  <title>여행 스케줄러</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon.svg" />
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app" id="app">
+    <header class="header">
+      <div class="header__top">
+        <h1 class="header__title">여행 스케줄러</h1>
+        <div class="header__actions">
+          <button type="button" class="btn-icon" id="btn-share" aria-label="공유·백업" title="공유·백업">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+              <path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 4.02"/>
+            </svg>
+          </button>
+          <button type="button" class="btn-icon" id="btn-new-trip" aria-label="새 여행 추가" title="새 여행">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="trip-select-wrap">
+        <select id="trip-select" class="trip-select" aria-label="여행 선택"></select>
+        <button type="button" class="btn-text btn-text--danger" id="btn-delete-trip" hidden>삭제</button>
+      </div>
+    </header>
+
+    <main class="main">
+      <section class="days-nav" id="days-nav" aria-label="일자 선택"></section>
+
+      <section class="day-panel" id="day-panel" hidden>
+        <div class="day-panel__header">
+          <h2 class="day-panel__title" id="day-title"></h2>
+          <div class="day-panel__actions">
+            <button type="button" class="btn-secondary btn-sm" id="btn-edit-day" hidden>일자 수정</button>
+            <button type="button" class="btn-secondary btn-sm" id="btn-add-place">장소 추가</button>
+          </div>
+        </div>
+        <div class="timeline" id="timeline" role="list"></div>
+        <p class="empty-state" id="places-empty" hidden>아직 등록된 장소가 없습니다.<br />「장소 추가」로 일정을 입력하세요.</p>
+      </section>
+
+      <section class="welcome" id="welcome">
+        <div class="welcome__icon" aria-hidden="true">✈️</div>
+        <h2 class="welcome__title">첫 여행을 만들어 보세요</h2>
+        <p class="welcome__desc">일자별 타임라인으로 장소·시간·할 일을 관리하고,<br />구글 지도로 바로 이동할 수 있어요.</p>
+        <button type="button" class="btn-primary" id="btn-welcome-new">여행 만들기</button>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span class="footer__status" id="save-status" aria-live="polite"></span>
+    </footer>
+  </div>
+
+  <!-- Share / import -->
+  <dialog class="modal modal--wide" id="modal-share">
+    <div class="modal__form">
+      <h3 class="modal__title">공유·백업</h3>
+
+      <section class="share-section">
+        <h4 class="share-section__title">보내기</h4>
+        <p class="share-section__hint">JSON 파일로 저장하거나, 휴대폰에서 공유 시트로 보낼 수 있어요.</p>
+        <div class="share-options">
+          <label class="share-radio">
+            <input type="radio" name="export-scope" value="trip" checked />
+            <span>선택한 여행만</span>
+          </label>
+          <label class="share-radio">
+            <input type="radio" name="export-scope" value="full" />
+            <span>전체 여행 (백업)</span>
+          </label>
+        </div>
+        <button type="button" class="btn-primary btn-block" id="btn-export">보내기</button>
+      </section>
+
+      <section class="share-section">
+        <h4 class="share-section__title">가져오기</h4>
+        <p class="share-section__hint">받은 JSON 파일 또는 텍스트를 붙여넣으세요.</p>
+        <input type="file" id="import-file" accept="application/json,.json" hidden />
+        <button type="button" class="btn-secondary btn-block" id="btn-import-file">파일에서 선택</button>
+        <label class="field">
+          <span class="field__label">JSON 붙여넣기</span>
+          <textarea class="field__input field__textarea field__textarea--mono" id="import-text" rows="5" placeholder='{"type":"travel-planner-export",...}'></textarea>
+        </label>
+        <div class="share-options" id="import-mode-wrap">
+          <label class="share-radio">
+            <input type="radio" name="import-mode" value="merge" checked />
+            <span>기존 목록에 추가</span>
+          </label>
+          <label class="share-radio">
+            <input type="radio" name="import-mode" value="replace" />
+            <span>전체 교체 (백업 복원)</span>
+          </label>
+        </div>
+        <button type="button" class="btn-primary btn-block" id="btn-import-apply">가져오기 적용</button>
+      </section>
+
+      <div class="modal__actions modal__actions--single">
+        <button type="button" class="btn-secondary" data-close>닫기</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Trip modal -->
+  <dialog class="modal" id="modal-trip">
+    <form class="modal__form" id="form-trip" method="dialog">
+      <h3 class="modal__title" id="modal-trip-title">새 여행</h3>
+      <label class="field">
+        <span class="field__label">여행 이름</span>
+        <input type="text" class="field__input" id="trip-name" required maxlength="60" placeholder="예: 도쿄 3박 4일" />
+      </label>
+      <div class="modal__actions">
+        <button type="button" class="btn-secondary" data-close>취소</button>
+        <button type="submit" class="btn-primary">저장</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Day modal -->
+  <dialog class="modal" id="modal-day">
+    <form class="modal__form" id="form-day" method="dialog">
+      <h3 class="modal__title" id="modal-day-title">일자 추가</h3>
+      <label class="field">
+        <span class="field__label">날짜</span>
+        <input type="date" class="field__input" id="day-date" required />
+      </label>
+      <label class="field">
+        <span class="field__label">라벨 (선택)</span>
+        <input type="text" class="field__input" id="day-label" maxlength="30" placeholder="예: Day 1 · 시부야" />
+      </label>
+      <div class="modal__actions">
+        <button type="button" class="btn-secondary" data-close>취소</button>
+        <button type="submit" class="btn-primary" id="btn-day-submit">추가</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Place modal -->
+  <dialog class="modal" id="modal-place">
+    <form class="modal__form" id="form-place" method="dialog">
+      <h3 class="modal__title" id="modal-place-title">장소 추가</h3>
+      <label class="field">
+        <span class="field__label">방문 시간</span>
+        <input type="time" class="field__input" id="place-time" required />
+      </label>
+      <label class="field">
+        <span class="field__label">장소 이름</span>
+        <input type="text" class="field__input" id="place-name" required maxlength="80" placeholder="예: 센소지" />
+      </label>
+      <label class="field">
+        <span class="field__label">주소 (선택)</span>
+        <input type="text" class="field__input" id="place-address" maxlength="120" placeholder="지도 검색에 사용됩니다" />
+      </label>
+      <div class="field-row">
+        <label class="field field--half">
+          <span class="field__label">위도 (선택)</span>
+          <input type="number" class="field__input" id="place-lat" step="any" placeholder="35.7148" />
+        </label>
+        <label class="field field--half">
+          <span class="field__label">경도 (선택)</span>
+          <input type="number" class="field__input" id="place-lng" step="any" placeholder="139.7967" />
+        </label>
+      </div>
+      <p class="field-hint">위·경도를 입력하면 더 정확한 위치로 연결됩니다.</p>
+      <label class="field">
+        <span class="field__label">그곳에서 할 일</span>
+        <textarea class="field__input field__textarea" id="place-todos" rows="3" maxlength="500" placeholder="메모, 체크리스트 등"></textarea>
+      </label>
+      <div class="modal__actions">
+        <button type="button" class="btn-secondary" data-close>취소</button>
+        <button type="submit" class="btn-primary">저장</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
