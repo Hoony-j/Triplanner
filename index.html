@@ -167,21 +167,11 @@
         <span class="field__label">주소 (선택)</span>
         <input type="text" class="field__input" id="place-address" maxlength="120" placeholder="지도 검색에 사용됩니다" />
       </label>
-      <div class="field-row">
-        <label class="field field--half">
-          <span class="field__label">위도 (선택)</span>
-          <input type="number" class="field__input" id="place-lat" step="any" placeholder="35.7148" />
-        </label>
-        <label class="field field--half">
-          <span class="field__label">경도 (선택)</span>
-          <input type="number" class="field__input" id="place-lng" step="any" placeholder="139.7967" />
-        </label>
-      </div>
-      <p class="field-hint">위·경도를 입력하면 더 정확한 위치로 연결됩니다.</p>
       <label class="field">
         <span class="field__label">그곳에서 할 일</span>
         <textarea class="field__input field__textarea" id="place-todos" rows="3" maxlength="500" placeholder="메모, 체크리스트 등"></textarea>
       </label>
+      <p class="field-hint">타임라인에서 할 일을 누르면 바로 수정할 수 있어요.</p>
       <div class="modal__actions">
         <button type="button" class="btn-secondary" data-close>취소</button>
         <button type="submit" class="btn-primary">저장</button>

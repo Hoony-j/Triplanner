@@ -284,7 +284,7 @@ function renderDaysNav() {
   addBtn.type = "button";
   addBtn.className = "day-chip day-chip--add";
   addBtn.textContent = "+ 일자";
-  addBtn.addEventListener("click", openDayModal);
+  addBtn.addEventListener("click", () => openDayModal());
   nav.appendChild(addBtn);
 
   if (!state.activeDayId && trip.days.length > 0) {
@@ -446,7 +446,7 @@ function renderTimeline() {
 
     const mapsUrl = googleMapsUrl(place);
     const todosHtml = place.todos?.trim()
-      ? `<p class="timeline-card__todos">${escapeHtml(place.todos)}</p>`
+      ? `<button type="button" class="timeline-card__todos" data-todos="${place.id}" aria-label="할 일 수정">${escapeHtml(place.todos)}</button>`
       : "";
 
     item.innerHTML = `
@@ -492,6 +492,8 @@ function renderTimeline() {
     item.querySelector(`[data-delete="${place.id}"]`).addEventListener("click", () =>
       deletePlace(place.id)
     );
+    const todosBtn = item.querySelector(`[data-todos="${place.id}"]`);
+    todosBtn?.addEventListener("click", () => openPlaceModal(place.id, { focusTodos: true }));
 
     timeline.appendChild(item);
   });
@@ -566,6 +568,7 @@ function deleteActiveTrip() {
 }
 
 function openDayModal(dayId = null) {
+  if (dayId != null && typeof dayId !== "string") dayId = null;
   state.editingDayId = dayId;
   const modal = $("#modal-day");
   const isEdit = Boolean(dayId);
@@ -580,7 +583,7 @@ function openDayModal(dayId = null) {
     $("#day-date").value = day.date || "";
     $("#day-label").value = day.label || "";
   } else {
-    $("#day-date").value = new Date().toISOString().slice(0, 10);
+    $("#day-date").value = getTodayISO();
     $("#day-label").value = "";
   }
 
@@ -628,7 +631,8 @@ function saveDay(date, label) {
   return true;
 }
 
-function openPlaceModal(placeId = null) {
+function openPlaceModal(placeId = null, options = {}) {
+  if (placeId != null && typeof placeId !== "string") placeId = null;
   state.editingPlaceId = placeId;
   const modal = $("#modal-place");
   const isEdit = Boolean(placeId);
@@ -641,8 +645,6 @@ function openPlaceModal(placeId = null) {
     $("#place-time").value = place.time || "09:00";
     $("#place-name").value = place.name || "";
     $("#place-address").value = place.address || "";
-    $("#place-lat").value = place.lat ?? "";
-    $("#place-lng").value = place.lng ?? "";
     $("#place-todos").value = place.todos || "";
   } else {
     $("#form-place").reset();
@@ -650,7 +652,11 @@ function openPlaceModal(placeId = null) {
   }
 
   modal.showModal();
-  $("#place-name").focus();
+  const focusTodos = Boolean(options.focusTodos);
+  requestAnimationFrame(() => {
+    if (focusTodos) $("#place-todos").focus();
+    else $("#place-name").focus();
+  });
 }
 
 function savePlace(formData) {
@@ -1011,14 +1017,17 @@ function setupModals() {
 
   $("#form-place").addEventListener("submit", (e) => {
     e.preventDefault();
-    const latRaw = $("#place-lat").value.trim();
-    const lngRaw = $("#place-lng").value.trim();
+    const day = getActiveDay();
+    const existing =
+      state.editingPlaceId && day
+        ? day.places.find((p) => p.id === state.editingPlaceId)
+        : null;
     savePlace({
       time: $("#place-time").value,
       name: $("#place-name").value.trim(),
       address: $("#place-address").value.trim(),
-      lat: latRaw === "" ? null : parseFloat(latRaw),
-      lng: lngRaw === "" ? null : parseFloat(lngRaw),
+      lat: existing?.lat ?? null,
+      lng: existing?.lng ?? null,
       todos: $("#place-todos").value.trim(),
     });
     $("#modal-place").close();

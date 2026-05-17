@@ -638,15 +638,27 @@ button {
 }
 
 .timeline-card__todos {
+  display: block;
+  width: 100%;
   margin: 0 0 14px;
   padding: 11px 13px;
   background: var(--input-bg);
+  border: none;
   border-radius: var(--radius-sm);
+  border-left: 3px solid var(--accent-soft);
+  font: inherit;
   font-size: 14px;
+  text-align: left;
   color: var(--text);
   white-space: pre-wrap;
   word-break: break-word;
-  border-left: 3px solid var(--accent-soft);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.timeline-card__todos:active {
+  background: color-mix(in srgb, var(--accent-soft) 55%, var(--input-bg));
 }
 
 .timeline-card__todos:empty,
@@ -875,6 +887,9 @@ button {
 
 .modal__form {
   padding: 26px 22px 22px;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 .modal__title {
@@ -982,13 +997,23 @@ button {
 
 .field__input {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   padding: 12px 14px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--input-bg);
   color: var(--text);
   font-size: 16px;
+  box-sizing: border-box;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.field__input[type="date"],
+.field__input[type="time"] {
+  display: block;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .field__input:focus {
