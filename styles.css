@@ -210,14 +210,67 @@ button {
   background: transparent;
 }
 
+/* Trip overview — 일정 탭 위, 기간·총 일수 표시만 */
+.trip-overview {
+  margin: 0 -20px 4px;
+  padding: 0 20px 8px;
+  background: transparent;
+}
+
+.trip-overview__row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+}
+
+.trip-overview__heading {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.trip-overview__summary {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text-secondary);
+  word-break: keep-all;
+  min-width: 0;
+}
+
 /* Days nav */
+.days-nav-wrap {
+  margin: 0 -20px;
+  padding: 0 20px;
+}
+
 .days-nav {
   display: flex;
   gap: 8px;
   overflow-x: auto;
-  padding: 12px 0 18px;
+  overflow-y: hidden;
+  padding: 12px 4px 18px;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+  cursor: grab;
+  touch-action: pan-x;
+}
+
+.days-nav.is-dragging {
+  cursor: grabbing;
+  scroll-snap-type: none;
+}
+
+.days-nav.is-dragging .day-chip {
+  pointer-events: none;
 }
 
 .days-nav::-webkit-scrollbar {
@@ -226,6 +279,7 @@ button {
 
 .day-chip {
   flex-shrink: 0;
+  scroll-snap-align: center;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -643,7 +697,21 @@ button {
   padding: 16px 18px;
   box-shadow: var(--shadow);
   border: 1px solid var(--border);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  -webkit-tap-highlight-color: transparent;
   transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.timeline-card:active {
+  transform: scale(0.99);
+}
+
+.timeline-card:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+  box-shadow: var(--shadow), 0 0 0 3px var(--accent-soft);
 }
 
 .timeline-card__name {
@@ -934,6 +1002,19 @@ button {
 
 .modal__actions--single {
   margin-top: 8px;
+}
+
+.modal__actions--split {
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.modal__actions-end {
+  display: flex;
+  gap: 10px;
+  margin-left: auto;
 }
 
 .share-section {

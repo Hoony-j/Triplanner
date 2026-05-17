@@ -199,6 +199,7 @@ function googleMapsUrl(place) {
 function render() {
   renderTripSelect();
   renderWelcomeOrPanel();
+  renderTripOverview();
   renderDaysNav();
   renderTimeline();
 }
@@ -229,11 +230,13 @@ function renderTripSelect() {
 function renderWelcomeOrPanel() {
   const welcome = $("#welcome");
   const panel = $("#day-panel");
+  const overview = $("#trip-overview");
   const hasTrip = state.data.trips.length > 0 && state.activeTripId;
 
   if (!hasTrip) {
     welcome.hidden = false;
     panel.hidden = true;
+    if (overview) overview.hidden = true;
     return;
   }
 
@@ -251,9 +254,41 @@ function renderWelcomeOrPanel() {
     }`;
     editDayBtn.hidden = false;
   } else {
-    title.textContent = "일자를 선택하거나 추가하세요";
+    title.textContent = "일정을 선택하거나 추가하세요";
     editDayBtn.hidden = true;
   }
+}
+
+function scrollActiveDayChipIntoView() {
+  const nav = $("#days-nav");
+  if (!nav || !state.activeDayId) return;
+  const chip = nav.querySelector(`[data-day-id="${state.activeDayId}"]`);
+  chip?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+}
+
+function getTripOverviewSummary(trip) {
+  const days = trip.days;
+  if (!days.length) return "";
+  const first = days[0].date;
+  const last = days[days.length - 1].date;
+  const range = first === last ? formatDate(first) : `${formatDate(first)} ~ ${formatDate(last)}`;
+  return `${range} · 총 ${days.length}일`;
+}
+
+function renderTripOverview() {
+  const section = $("#trip-overview");
+  const summary = $("#trip-overview-summary");
+  if (!section || !summary) return;
+
+  const trip = getActiveTrip();
+  if (!trip?.days.length) {
+    section.hidden = true;
+    summary.textContent = "";
+    return;
+  }
+
+  section.hidden = false;
+  summary.textContent = getTripOverviewSummary(trip);
 }
 
 function renderDaysNav() {
@@ -279,20 +314,88 @@ function renderDaysNav() {
       <span class="day-chip__date">${formatDate(day.date)}</span>
       ${day.label ? `<span class="day-chip__label">${escapeHtml(day.label)}</span>` : ""}
     `;
-    btn.addEventListener("click", () => selectDay(day.id));
+    btn.addEventListener("click", () => {
+      if (day.id === state.activeDayId) {
+        openDayModal(day.id);
+      } else {
+        selectDay(day.id);
+      }
+    });
     nav.appendChild(btn);
   });
 
   const addBtn = document.createElement("button");
   addBtn.type = "button";
   addBtn.className = "day-chip day-chip--add";
-  addBtn.textContent = "+ 일자";
+  addBtn.textContent = "+ 일정";
   addBtn.addEventListener("click", () => openDayModal());
   nav.appendChild(addBtn);
 
   if (!state.activeDayId && trip.days.length > 0) {
     selectDay(trip.days[0].id);
+    return;
   }
+
+  requestAnimationFrame(scrollActiveDayChipIntoView);
+}
+
+function setupDaysNavDragScroll() {
+  const nav = $("#days-nav");
+  if (!nav || nav.dataset.dragBound === "1") return;
+  nav.dataset.dragBound = "1";
+
+  const DRAG_THRESHOLD = 8;
+  let pointerId = null;
+  let startX = 0;
+  let scrollLeft = 0;
+  let isDragging = false;
+
+  nav.addEventListener("pointerdown", (e) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    pointerId = e.pointerId;
+    startX = e.clientX;
+    scrollLeft = nav.scrollLeft;
+    isDragging = false;
+  });
+
+  nav.addEventListener(
+    "pointermove",
+    (e) => {
+      if (e.pointerId !== pointerId) return;
+      const dx = e.clientX - startX;
+      if (!isDragging) {
+        if (Math.abs(dx) < DRAG_THRESHOLD) return;
+        isDragging = true;
+        nav.classList.add("is-dragging");
+        if (nav.setPointerCapture) nav.setPointerCapture(e.pointerId);
+      }
+      e.preventDefault();
+      nav.scrollLeft = scrollLeft - dx;
+    },
+    { passive: false }
+  );
+
+  const endDrag = (e) => {
+    if (e.pointerId !== pointerId) return;
+    pointerId = null;
+    isDragging = false;
+    nav.classList.remove("is-dragging");
+    if (nav.releasePointerCapture) {
+      try {
+        nav.releasePointerCapture(e.pointerId);
+      } catch {
+        /* ignore */
+      }
+    }
+  };
+
+  nav.addEventListener("pointerup", endDrag);
+  nav.addEventListener("pointercancel", endDrag);
+  nav.addEventListener("lostpointercapture", () => {
+    pointerId = null;
+    isDragging = false;
+    nav.classList.remove("is-dragging");
+  });
 }
 
 function getScheduleWindow(day) {
@@ -459,7 +562,7 @@ function renderTimeline() {
       <div class="timeline-item__track" aria-hidden="true">
         <span class="timeline-item__dot"></span>
       </div>
-      <div class="timeline-card">
+      <div class="timeline-card" data-place="${place.id}" role="button" tabindex="0" aria-label="${escapeHtml(place.name)} 수정">
         <h3 class="timeline-card__name">${escapeHtml(place.name)}</h3>
         ${place.address ? `<p class="timeline-card__address">${escapeHtml(place.address)}</p>` : ""}
         ${todosHtml}
@@ -471,32 +574,28 @@ function renderTimeline() {
             </svg>
             구글맵 보기
           </a>
-          <div class="btn-action-group">
-            <button type="button" class="btn-action btn-action--edit" data-edit="${place.id}" aria-label="장소 수정">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
-              </svg>
-              <span>수정</span>
-            </button>
-            <button type="button" class="btn-action btn-action--delete" data-delete="${place.id}" aria-label="장소 삭제">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>
-              </svg>
-              <span>삭제</span>
-            </button>
-          </div>
         </div>
       </div>
     `;
 
-    item.querySelector(`[data-edit="${place.id}"]`).addEventListener("click", () =>
-      openPlaceModal(place.id)
-    );
-    item.querySelector(`[data-delete="${place.id}"]`).addEventListener("click", () =>
-      deletePlace(place.id)
-    );
+    const card = item.querySelector(".timeline-card");
+    const openEdit = () => openPlaceModal(place.id);
+    card.addEventListener("click", (e) => {
+      if (e.target.closest("a.btn-maps, .timeline-card__todos")) return;
+      openEdit();
+    });
+    card.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      if (e.target.closest(".timeline-card__todos")) return;
+      e.preventDefault();
+      openEdit();
+    });
+
     const todosBtn = item.querySelector(`[data-todos="${place.id}"]`);
-    todosBtn?.addEventListener("click", () => openPlaceModal(place.id, { focusTodos: true }));
+    todosBtn?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openPlaceModal(place.id, { focusTodos: true });
+    });
 
     timeline.appendChild(item);
   });
@@ -528,6 +627,7 @@ function selectDay(dayId) {
   state.activeDayId = dayId;
   state.data.activeDayId = dayId;
   saveData();
+  renderTripOverview();
   renderDaysNav();
   renderWelcomeOrPanel();
   renderTimeline();
@@ -576,8 +676,9 @@ function openDayModal(dayId = null) {
   const modal = $("#modal-day");
   const isEdit = Boolean(dayId);
 
-  $("#modal-day-title").textContent = isEdit ? "일자 수정" : "일자 추가";
+  $("#modal-day-title").textContent = isEdit ? "일정 수정" : "일정 추가";
   $("#btn-day-submit").textContent = isEdit ? "저장" : "추가";
+  $("#btn-delete-day").hidden = !isEdit;
 
   if (isEdit) {
     const trip = getActiveTrip();
@@ -634,12 +735,40 @@ function saveDay(date, label) {
   return true;
 }
 
+function deleteDay(dayId) {
+  const trip = getActiveTrip();
+  if (!trip) return;
+
+  const day = trip.days.find((d) => d.id === dayId);
+  if (!day) return;
+
+  const placeCount = day.places?.length || 0;
+  const msg =
+    placeCount > 0
+      ? `이 일정과 등록된 장소 ${placeCount}곳이 모두 삭제됩니다. 계속할까요?`
+      : "이 일정을 삭제할까요?";
+  if (!confirm(msg)) return;
+
+  trip.days = trip.days.filter((d) => d.id !== dayId);
+  if (state.activeDayId === dayId) {
+    state.activeDayId = trip.days[0]?.id || null;
+    state.data.activeDayId = state.activeDayId;
+  }
+
+  state.editingDayId = null;
+  saveData();
+  render();
+  $("#modal-day").close();
+}
+
 function openPlaceModal(placeId = null, options = {}) {
   if (placeId != null && typeof placeId !== "string") placeId = null;
   state.editingPlaceId = placeId;
   const modal = $("#modal-place");
   const isEdit = Boolean(placeId);
   $("#modal-place-title").textContent = isEdit ? "장소 수정" : "장소 추가";
+  $("#btn-place-submit").textContent = isEdit ? "저장" : "추가";
+  $("#btn-delete-place").hidden = !isEdit;
 
   if (isEdit) {
     const day = getActiveDay();
@@ -713,8 +842,10 @@ function deletePlace(placeId) {
   if (!day) return;
   if (!confirm("이 장소를 삭제할까요?")) return;
   day.places = day.places.filter((p) => p.id !== placeId);
+  state.editingPlaceId = null;
   saveData();
   render();
+  $("#modal-place").close();
 }
 
 // ——— Share / import ———
@@ -1037,6 +1168,20 @@ function setupModals() {
     }
   });
 
+  $("#btn-delete-day").addEventListener("click", () => {
+    if (!state.editingDayId) return;
+    deleteDay(state.editingDayId);
+  });
+
+  $("#modal-place").addEventListener("close", () => {
+    state.editingPlaceId = null;
+  });
+
+  $("#btn-delete-place").addEventListener("click", () => {
+    if (!state.editingPlaceId) return;
+    deletePlace(state.editingPlaceId);
+  });
+
   $("#form-place").addEventListener("submit", (e) => {
     e.preventDefault();
     const day = getActiveDay();
@@ -1089,7 +1234,7 @@ function init() {
 
   $("#btn-add-place").addEventListener("click", () => {
     if (!getActiveDay()) {
-      alert("먼저 일자를 추가해 주세요.");
+      alert("먼저 일정을 추가해 주세요.");
       openDayModal();
       return;
     }
@@ -1102,6 +1247,7 @@ function init() {
 
   setupModals();
   setupShareImport();
+  setupDaysNavDragScroll();
   registerServiceWorker();
   window.addEventListener("resize", updateTimelineNow);
   document.addEventListener("visibilitychange", () => {

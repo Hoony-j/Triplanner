@@ -1,7 +1,7 @@
 {
   "name": "여행 스케줄러",
   "short_name": "여행앱",
-  "description": "일자별 타임라인으로 여행 일정을 관리하는 PWA",
+  "description": "일정별 타임라인으로 여행 일정을 관리하는 PWA",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

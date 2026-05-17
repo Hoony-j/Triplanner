@@ -41,13 +41,22 @@
     </header>
 
     <main class="main">
-      <section class="days-nav" id="days-nav" aria-label="일자 선택"></section>
+      <section class="trip-overview" id="trip-overview" hidden aria-label="전체 일정">
+        <div class="trip-overview__row">
+          <h2 class="trip-overview__heading">전체 일정</h2>
+          <p class="trip-overview__summary" id="trip-overview-summary"></p>
+        </div>
+      </section>
+
+      <div class="days-nav-wrap">
+        <section class="days-nav" id="days-nav" aria-label="일정 선택"></section>
+      </div>
 
       <section class="day-panel" id="day-panel" hidden>
         <div class="day-panel__header">
           <h2 class="day-panel__title" id="day-title"></h2>
           <div class="day-panel__actions">
-            <button type="button" class="btn-secondary btn-sm" id="btn-edit-day" hidden>일자 수정</button>
+            <button type="button" class="btn-secondary btn-sm" id="btn-edit-day" hidden>일정 수정</button>
             <button type="button" class="btn-secondary btn-sm" id="btn-add-place">장소 추가</button>
           </div>
         </div>
@@ -58,7 +67,7 @@
       <section class="welcome" id="welcome">
         <div class="welcome__icon" aria-hidden="true">✈️</div>
         <h2 class="welcome__title">첫 여행을 만들어 보세요</h2>
-        <p class="welcome__desc">일자별 타임라인으로 장소·시간·할 일을 관리하고,<br />구글 지도로 바로 이동할 수 있어요.</p>
+        <p class="welcome__desc">일정별 타임라인으로 장소·시간·할 일을 관리하고,<br />구글 지도로 바로 이동할 수 있어요.</p>
         <button type="button" class="btn-primary" id="btn-welcome-new">여행 만들기</button>
       </section>
     </main>
@@ -135,7 +144,7 @@
   <!-- Day modal -->
   <dialog class="modal" id="modal-day">
     <form class="modal__form" id="form-day" method="dialog">
-      <h3 class="modal__title" id="modal-day-title">일자 추가</h3>
+      <h3 class="modal__title" id="modal-day-title">일정 추가</h3>
       <label class="field">
         <span class="field__label">날짜</span>
         <input type="date" class="field__input" id="day-date" required />
@@ -144,9 +153,12 @@
         <span class="field__label">라벨 (선택)</span>
         <input type="text" class="field__input" id="day-label" maxlength="30" placeholder="예: Day 1 · 시부야" />
       </label>
-      <div class="modal__actions">
-        <button type="button" class="btn-secondary" data-close>취소</button>
-        <button type="submit" class="btn-primary" id="btn-day-submit">추가</button>
+      <div class="modal__actions modal__actions--split">
+        <button type="button" class="btn-text btn-text--danger" id="btn-delete-day" hidden>일정 삭제</button>
+        <div class="modal__actions-end">
+          <button type="button" class="btn-secondary" data-close>취소</button>
+          <button type="submit" class="btn-primary" id="btn-day-submit">추가</button>
+        </div>
       </div>
     </form>
   </dialog>
@@ -171,10 +183,13 @@
         <span class="field__label">그곳에서 할 일</span>
         <textarea class="field__input field__textarea" id="place-todos" rows="3" maxlength="500" placeholder="메모, 체크리스트 등"></textarea>
       </label>
-      <p class="field-hint">타임라인에서 할 일을 누르면 바로 수정할 수 있어요.</p>
-      <div class="modal__actions">
-        <button type="button" class="btn-secondary" data-close>취소</button>
-        <button type="submit" class="btn-primary">저장</button>
+      <p class="field-hint">타임라인에서 장소를 누르면 수정할 수 있어요. 할 일만 누르면 할 일 칸으로 이동합니다.</p>
+      <div class="modal__actions modal__actions--split">
+        <button type="button" class="btn-text btn-text--danger" id="btn-delete-place" hidden>장소 삭제</button>
+        <div class="modal__actions-end">
+          <button type="button" class="btn-secondary" data-close>취소</button>
+          <button type="submit" class="btn-primary" id="btn-place-submit">저장</button>
+        </div>
       </div>
     </form>
   </dialog>
