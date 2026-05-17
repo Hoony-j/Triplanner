@@ -244,8 +244,11 @@ function renderWelcomeOrPanel() {
   const title = $("#day-title");
   const editDayBtn = $("#btn-edit-day");
   if (day) {
-    const label = day.label ? ` · ${day.label}` : "";
-    title.textContent = `${formatDate(day.date)}${label}`;
+    title.innerHTML = `<span class="day-panel__date">${formatDate(day.date)}</span>${
+      day.label
+        ? `<span class="day-panel__place">${escapeHtml(day.label)}</span>`
+        : ""
+    }`;
     editDayBtn.hidden = false;
   } else {
     title.textContent = "일자를 선택하거나 추가하세요";
@@ -651,12 +654,31 @@ function openPlaceModal(placeId = null, options = {}) {
     $("#place-time").value = "09:00";
   }
 
+  const timeEl = $("#place-time");
+  if (isEdit) {
+    timeEl.removeAttribute("readonly");
+    timeEl.removeAttribute("tabindex");
+  } else {
+    timeEl.setAttribute("readonly", "readonly");
+    timeEl.setAttribute("tabindex", "-1");
+    const unlockTime = () => {
+      timeEl.removeAttribute("readonly");
+      timeEl.removeAttribute("tabindex");
+    };
+    timeEl.addEventListener("pointerdown", unlockTime, { once: true });
+    timeEl.addEventListener("keydown", unlockTime, { once: true });
+  }
+
   modal.showModal();
+
   const focusTodos = Boolean(options.focusTodos);
-  requestAnimationFrame(() => {
-    if (focusTodos) $("#place-todos").focus();
-    else $("#place-name").focus();
-  });
+  if (focusTodos) {
+    requestAnimationFrame(() => $("#place-todos").focus({ preventScroll: true }));
+  } else if (isEdit) {
+    requestAnimationFrame(() => $("#place-name").focus({ preventScroll: true }));
+  } else if (document.activeElement instanceof HTMLElement) {
+    document.activeElement.blur();
+  }
 }
 
 function savePlace(formData) {

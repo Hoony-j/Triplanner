@@ -283,10 +283,11 @@ button {
 .day-chip__label {
   font-size: 11px;
   opacity: 0.85;
-  max-width: 100px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  max-width: 120px;
+  line-height: 1.35;
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 .day-chip--add {
@@ -315,11 +316,33 @@ button {
 }
 
 .day-panel__title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   margin: 0;
   font-size: 18px;
   font-weight: 600;
   letter-spacing: -0.02em;
   color: var(--text-secondary);
+  min-width: 0;
+}
+
+.day-panel__date {
+  display: block;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.25;
+}
+
+.day-panel__place {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  line-height: 1.35;
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 .day-panel {
@@ -628,6 +651,9 @@ button {
   font-size: 17px;
   font-weight: 600;
   letter-spacing: -0.02em;
+  line-height: 1.35;
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 .timeline-card__address {

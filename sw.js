@@ -1,4 +1,4 @@
-const CACHE_NAME = "travel-planner-v12";
+const CACHE_NAME = "travel-planner-v13";
 
 const PRECACHE_URLS = [
   "./",
